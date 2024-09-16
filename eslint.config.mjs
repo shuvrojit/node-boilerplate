@@ -7,4 +7,7 @@ export default [
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
+  {
+    ignores: ['build', 'node_modules'],
+  },
 ];
