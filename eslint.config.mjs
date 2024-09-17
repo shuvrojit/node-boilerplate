@@ -4,10 +4,17 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default [
   { files: ['**/*.{js,mjs,cjs,ts}'] },
+  { ignores: ['build', 'node_modules'] },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
-  prettierConfig,
+  ...tseslint.configs.recommendedTypeChecked,
   {
-    ignores: ['build', 'node_modules'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
   },
+  prettierConfig,
 ];

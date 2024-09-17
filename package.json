@@ -5,7 +5,7 @@
   "author": "Shuvrojit Biswas <jsuvro17@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "pm2 start ecosystem.config.json --env production",
+    "start": "cross-env NODE_ENV=production pm2 start ecosystem.config.json --env production",
     "start:prod": "cross-env NODE_ENV=production pm2 start ecosystem.config.json --no-daemon",
     "dev": "cross-env NODE_ENV=development nodemon src/index.ts",
     "build": "tsc",
