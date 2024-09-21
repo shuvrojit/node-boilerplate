@@ -3,7 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const PORT: string | number = process.env.PORT || 8000;
+const PORT: number = Number(process.env.PORT) || 8000;
+
+if (isNaN(PORT)) {
+  throw new Error('Invalid PORT environment variable');
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} ...`);
