@@ -17,6 +17,9 @@
     "test:watch": "jest -i --watchAll",
     "coverage": "jest -i --coverage",
     "coverage:coveralls": "jest -i --coverage --coverageReporters=text-lcov | coveralls",
+    "docker:prod": "yarn build && docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
+    "docker:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
+    "docker:test": "docker-compose -f docker-compose.yml -f docker-compose.test.yml up --build",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -28,6 +31,7 @@
     "@types/eslint__js": "^8.42.3",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.13",
+    "@types/mongoose": "^5.11.97",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.5.5",
     "coveralls": "^3.1.1",
@@ -47,6 +51,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "mongoose": "^8.6.3",
     "morgan": "^1.10.0",
     "pm2": "^5.4.2",
     "winston": "^3.14.2",
