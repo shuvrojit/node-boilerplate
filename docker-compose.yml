@@ -1,0 +1,28 @@
+services:
+  express:
+    build:
+      context: .
+    ports:
+      - '8000:8000'
+    depends_on:
+      - dbdata
+    networks:
+      - backend
+    env_file:
+      - .env
+
+  dbdata:
+    image: mongo:latest
+    ports:
+      - '27017:27017'
+    volumes:
+      - dbdata:/data/db
+    networks:
+      - backend
+
+volumes:
+  dbdata:
+
+networks:
+  backend:
+    driver: bridge

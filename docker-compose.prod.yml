@@ -1,0 +1,7 @@
+services:
+  express:
+    container_name: express
+    environment:
+      NODE_ENV: production
+    restart: always
+    command: yarn start:prod

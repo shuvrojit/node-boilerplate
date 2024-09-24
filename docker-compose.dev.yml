@@ -1,0 +1,8 @@
+services:
+  express:
+    container_name: express
+    environment:
+      NODE_ENV: development
+    command: yarn dev -L
+    volumes:
+      - .:/usr/src/app

@@ -1,0 +1,20 @@
+services:
+  express:
+    container_name: express
+    environment:
+      NODE_ENV: test
+    command: yarn test
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - dbdata
+
+  dbdata:
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: test
+      MONGO_INITDB_ROOT_PASSWORD: test
+    volumes:
+      - mongo-data-test:/data/db
+
+volumes:
+  mongo-data-test:
