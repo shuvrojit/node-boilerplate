@@ -3,6 +3,7 @@ import { userService, QueryUserInput } from '../services';
 import asyncHandler from '../middlewares/asyncHandler';
 import ApiError from '../utils/ApiError';
 import { IUser } from '../models/user.model';
+import { toUserResponse } from '../utils/userResponse';
 
 // Updated Request type to include the properly typed user
 type AuthenticatedRequest = Request & {
@@ -30,7 +31,7 @@ const createUser = asyncHandler(
     const user = await userService.createUser(req.body);
     res.status(201).json({
       status: 'success',
-      data: user,
+      data: toUserResponse(user),
     });
   }
 );
@@ -46,7 +47,7 @@ const getUser = asyncHandler(
     }
     res.status(200).json({
       status: 'success',
-      data: user,
+      data: toUserResponse(user),
     });
   }
 );
@@ -64,7 +65,7 @@ const updateUser = asyncHandler(
     const user = await userService.updateUserById(req.params.userId, req.body);
     res.status(200).json({
       status: 'success',
-      data: user,
+      data: toUserResponse(user),
     });
   }
 );
@@ -83,7 +84,7 @@ const getUsers = asyncHandler(
 
     res.status(200).json({
       status: 'success',
-      data: result.users,
+      data: result.users.map(toUserResponse),
       meta: {
         total: result.total,
         page: result.page,

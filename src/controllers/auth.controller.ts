@@ -4,6 +4,7 @@ import asyncHandler from '../middlewares/asyncHandler';
 import config from '../config/config';
 import { IUser } from '../models';
 import ApiError from '../utils/ApiError'; // Import ApiError
+import { toUserResponse } from '../utils/userResponse';
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -38,7 +39,7 @@ const register = asyncHandler(
     res.status(201).json({
       status: 'success',
       data: {
-        user, // Note: Ensure sensitive data isn't exposed here if not handled in service
+        user: toUserResponse(user),
         tokens,
       },
     });
@@ -121,9 +122,13 @@ const refreshTokens = asyncHandler(
 const getProfile = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction) => {
     // Return authenticated user (added by auth middleware)
+    if (!req.user) {
+      throw new ApiError(401, 'Please authenticate');
+    }
+
     res.status(200).json({
       status: 'success',
-      data: req.user,
+      data: toUserResponse(req.user),
     });
   }
 );

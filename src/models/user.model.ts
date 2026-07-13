@@ -13,6 +13,15 @@ export interface IUser extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
+const removeSensitiveFields = (
+  _document: unknown,
+  value: Record<string, unknown>
+): Record<string, unknown> => {
+  delete value.password;
+  delete value.refreshToken;
+  return value;
+};
+
 const userSchema = new Schema<IUser>(
   {
     name: {
@@ -36,7 +45,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
       minlength: 8,
-      private: true, // Will not be returned in queries
+      select: false,
       validate: {
         validator: function (v: string) {
           // Check for at least one number, one symbol, and eight characters
@@ -57,11 +66,13 @@ const userSchema = new Schema<IUser>(
     },
     refreshToken: {
       type: String,
-      private: true, // Ensure refresh token isn't returned by default
+      select: false,
     },
   },
   {
     timestamps: true,
+    toJSON: { transform: removeSensitiveFields },
+    toObject: { transform: removeSensitiveFields },
   }
 );
 

@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
 import config from '../config/config';
-import { IUser } from '../models';
 // import bcrypt from 'bcryptjs'; // Removed unused import
 import ApiError from '../utils/ApiError';
 // import { userService } from './index'; // Removed unused import
 import User from '../models/user.model'; // Import User model
+import { toUserResponse, UserResponse } from '../utils/userResponse';
 
 export interface TokenPayload {
   sub: string; // User ID
@@ -79,10 +79,8 @@ class AuthService {
    * @param {LoginCredentials} credentials - Login credentials
    * @returns {Promise<{user: Omit<IUser, 'password' | 'refreshToken'>, tokens: AuthTokens}>} User object (without sensitive fields) and tokens
    */
-  public async login(
-    credentials: LoginCredentials
-  ): Promise<{
-    user: Omit<IUser, 'password' | 'refreshToken'>;
+  public async login(credentials: LoginCredentials): Promise<{
+    user: UserResponse;
     tokens: AuthTokens;
   }> {
     try {
@@ -113,23 +111,8 @@ class AuthService {
       user.refreshToken = tokens.refreshToken; // Store the plain token for now, hashing can be added
       await user.save();
 
-      // Create a user object for the response, excluding sensitive fields
-      // Use Omit<IUser, 'password' | 'refreshToken'> for type safety if needed,
-      // but constructing a new object is generally safer than deleting properties.
-      const userResponse = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        // Explicitly ensure IUser properties are included if needed, excluding sensitive ones
-      };
-
-      // Cast the constructed object to the expected return type
       return {
-        user: userResponse as Omit<IUser, 'password' | 'refreshToken'>,
+        user: toUserResponse(user),
         tokens,
       };
     } catch (error) {
