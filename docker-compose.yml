@@ -10,11 +10,12 @@ services:
       - backend
     env_file:
       - .env
+    environment:
+      PORT: 8000
+      MONGODB_URL: mongodb://dbdata:27017/ai-linguist
 
   dbdata:
-    image: mongo:latest
-    ports:
-      - '27017:27017'
+    image: mongo:8.0
     volumes:
       - dbdata:/data/db
     networks:

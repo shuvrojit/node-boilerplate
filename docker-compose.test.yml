@@ -3,9 +3,11 @@ services:
     container_name: express
     environment:
       NODE_ENV: test
+      MONGODB_URL: mongodb://test:test@dbdata:27017/test-db?authSource=admin
     command: yarn test
     volumes:
       - .:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - dbdata
 

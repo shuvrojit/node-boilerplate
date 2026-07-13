@@ -3,5 +3,11 @@ services:
     container_name: express
     environment:
       NODE_ENV: production
+      MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD}@dbdata:27017/${DB_NAME:-ai-linguist}?authSource=admin
     restart: always
     command: yarn start:prod
+
+  dbdata:
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD}

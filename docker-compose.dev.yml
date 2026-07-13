@@ -6,3 +6,8 @@ services:
     command: yarn dev -L
     volumes:
       - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+  dbdata:
+    ports:
+      - '127.0.0.1:27017:27017'
