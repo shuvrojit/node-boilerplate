@@ -14,12 +14,13 @@ export const loginSchema = {
 
 // Register request schema
 export const registerSchema = {
-  body: z.object({
-    name: z.string().min(3).max(100),
-    email: emailSchema,
-    password: passwordSchema,
-    role: z.enum(['user', 'admin']).optional(),
-  }),
+  body: z
+    .object({
+      name: z.string().min(3).max(100),
+      email: emailSchema,
+      password: passwordSchema,
+    })
+    .strict(),
 };
 
 // Refresh token schema
