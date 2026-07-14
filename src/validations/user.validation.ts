@@ -57,14 +57,8 @@ export const queryUsersSchema = {
       (val) => (val === 'true' ? true : val === 'false' ? false : undefined),
       z.boolean().optional()
     ),
-    page: z.preprocess(
-      (val) => parseInt(val as string, 10),
-      z.number().int().positive().optional().default(1)
-    ),
-    limit: z.preprocess(
-      (val) => parseInt(val as string, 10),
-      z.number().int().positive().max(100).optional().default(10)
-    ),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(10),
     sortBy: z.string().optional().default('createdAt'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
   }),
