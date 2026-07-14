@@ -36,7 +36,7 @@ const userSchema = new Schema<IUser>(
       lowercase: true,
       validate: {
         validator: function (v: string) {
-          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+          return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
         },
         message: (props) => `${props.value} is not a valid email address!`,
       },
@@ -78,13 +78,12 @@ const userSchema = new Schema<IUser>(
 
 // Add pre-save middleware to hash password before saving
 userSchema.pre('save', async function (next) {
-  const user = this;
-  if (!user.isModified('password')) return next();
+  if (!this.isModified('password')) return next();
 
   // Hash password with bcrypt with salt rounds of 10
   try {
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
+    this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
     next(error as Error);
@@ -95,8 +94,7 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
-  const user = this;
-  return bcrypt.compare(candidatePassword, user.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 const User = mongoose.model<IUser>('User', userSchema);

@@ -58,7 +58,7 @@ class AuthService {
     try {
       const payload = jwt.verify(token, config.jwt.secret) as TokenPayload;
       return payload;
-    } catch (error) {
+    } catch {
       throw new ApiError(401, 'Invalid or expired token');
     }
   }

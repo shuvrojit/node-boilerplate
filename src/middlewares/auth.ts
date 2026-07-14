@@ -3,12 +3,9 @@ import ApiError from '../utils/ApiError';
 import { authService, userService } from '../services';
 import { IUser } from '../models';
 
-// Extend the Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: IUser;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: IUser;
   }
 }
 
