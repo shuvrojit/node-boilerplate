@@ -5,7 +5,10 @@ services:
     ports:
       - '8000:8000'
     depends_on:
-      - dbdata
+      dbdata:
+        condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - backend
     env_file:
@@ -13,11 +16,26 @@ services:
     environment:
       PORT: 8000
       MONGODB_URL: mongodb://dbdata:27017/ai-linguist
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ''
+      REDIS_DB: 0
 
   dbdata:
     image: mongo:8.0
     volumes:
       - dbdata:/data/db
+    networks:
+      - backend
+
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     networks:
       - backend
 
