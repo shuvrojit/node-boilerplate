@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 
+import config from '../config/config';
+
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -14,7 +16,7 @@ interface AIRequestOptions {
 }
 
 const openai = new OpenAI({
-  apiKey: 'GEMINI_API_KEY',
+  apiKey: config.openai.apiKey,
   baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
 });
 
