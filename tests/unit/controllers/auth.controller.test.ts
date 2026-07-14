@@ -45,6 +45,10 @@ describe('Auth Controller', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+  let persistedUser: typeof mockUser & {
+    refreshToken?: string;
+    save: jest.Mock;
+  };
 
   // Define expected cookie options based on mocked config
   const REFRESH_COOKIE_OPTIONS = {
@@ -59,8 +63,17 @@ describe('Auth Controller', () => {
     sameSite: 'strict' as const,
     maxAge: config.jwt.accessExpirationMinutes * 60 * 1000,
   };
+  const COOKIE_CLEAR_OPTIONS = {
+    httpOnly: true,
+    secure: config.cookie.secure,
+    sameSite: 'strict' as const,
+  };
 
   beforeEach(() => {
+    persistedUser = {
+      ...mockUser,
+      save: jest.fn().mockResolvedValue(undefined),
+    };
     mockReq = {
       body: {},
       cookies: {},
@@ -102,7 +115,7 @@ describe('Auth Controller', () => {
         email: 'test@example.com',
         password: 'password123!',
       };
-      (userService.createUser as jest.Mock).mockResolvedValue(mockUser);
+      (userService.createUser as jest.Mock).mockResolvedValue(persistedUser);
       (authService.generateAuthTokens as jest.Mock).mockReturnValue(mockTokens);
 
       await (authController.register as any)(
@@ -110,9 +123,12 @@ describe('Auth Controller', () => {
         mockRes as Response,
         mockNext
       );
+      await new Promise(process.nextTick);
 
       expect(userService.createUser).toHaveBeenCalledWith(mockReq.body);
       expect(authService.generateAuthTokens).toHaveBeenCalledWith(userId);
+      expect(persistedUser.refreshToken).toBe(mockTokens.refreshToken);
+      expect(persistedUser.save).toHaveBeenCalledTimes(1);
       expect(mockRes.cookie).toHaveBeenCalledWith(
         'refreshToken',
         mockTokens.refreshToken,
@@ -226,20 +242,60 @@ describe('Auth Controller', () => {
   });
 
   describe('logout', () => {
-    it('should clear refreshToken cookie and return success message', async () => {
+    it('should revoke the refresh token and clear both auth cookies', async () => {
+      const revokeRefreshToken = jest.fn().mockResolvedValue(undefined);
+      (
+        authService as unknown as { revokeRefreshToken: jest.Mock }
+      ).revokeRefreshToken = revokeRefreshToken;
+      mockReq.cookies = { refreshToken: 'stored-refresh-token' };
+
       await (authController.logout as any)(
         mockReq as Request,
         mockRes as Response,
         mockNext
       );
 
-      expect(mockRes.clearCookie).toHaveBeenCalledWith('refreshToken');
+      expect(revokeRefreshToken).toHaveBeenCalledWith('stored-refresh-token');
+      expect(mockRes.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        COOKIE_CLEAR_OPTIONS
+      );
+      expect(mockRes.clearCookie).toHaveBeenCalledWith(
+        'accessToken',
+        COOKIE_CLEAR_OPTIONS
+      );
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',
         message: 'Logged out successfully',
       });
       expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('clears client cookies even when server-side revocation fails', async () => {
+      const error = new Error('Database unavailable');
+      const revokeRefreshToken = jest.fn().mockRejectedValue(error);
+      (
+        authService as unknown as { revokeRefreshToken: jest.Mock }
+      ).revokeRefreshToken = revokeRefreshToken;
+      mockReq.cookies = { refreshToken: 'stored-refresh-token' };
+
+      await (authController.logout as any)(
+        mockReq as Request,
+        mockRes as Response,
+        mockNext
+      );
+      await new Promise(process.nextTick);
+
+      expect(mockRes.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        COOKIE_CLEAR_OPTIONS
+      );
+      expect(mockRes.clearCookie).toHaveBeenCalledWith(
+        'accessToken',
+        COOKIE_CLEAR_OPTIONS
+      );
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 

@@ -163,6 +163,31 @@ class AuthService {
       throw new ApiError(401, 'Invalid refresh token');
     }
   }
+
+  /**
+   * Revoke a stored refresh token. Invalid and stale tokens are treated as
+   * already revoked so logout remains idempotent.
+   */
+  public async revokeRefreshToken(refreshToken: string): Promise<void> {
+    let payload: TokenPayload;
+    try {
+      payload = this.verifyToken(refreshToken);
+    } catch {
+      return;
+    }
+
+    if (payload.type !== 'REFRESH') {
+      return;
+    }
+
+    const user = await User.findById(payload.sub).select('+refreshToken');
+    if (!user || user.refreshToken !== refreshToken) {
+      return;
+    }
+
+    user.refreshToken = undefined;
+    await user.save();
+  }
 }
 
 export default new AuthService();

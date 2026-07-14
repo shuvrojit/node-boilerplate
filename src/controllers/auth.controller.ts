@@ -20,6 +20,12 @@ const ACCESS_COOKIE_OPTIONS = {
   maxAge: config.jwt.accessExpirationMinutes * 60 * 1000, // minutes to milliseconds
 };
 
+const COOKIE_CLEAR_OPTIONS = {
+  httpOnly: true,
+  secure: config.cookie.secure,
+  sameSite: 'strict' as const,
+};
+
 /**
  * Register a new user
  */
@@ -30,6 +36,10 @@ const register = asyncHandler(
 
     // Generate auth tokens
     const tokens = authService.generateAuthTokens(String(user._id));
+
+    // Persist the issued refresh token so registration and login share the same lifecycle.
+    user.refreshToken = tokens.refreshToken;
+    await user.save();
 
     // Set tokens in HTTP-only cookies
     res.cookie('refreshToken', tokens.refreshToken, REFRESH_COOKIE_OPTIONS);
@@ -76,9 +86,16 @@ const login = asyncHandler(
  * Logout the user
  */
 const logout = asyncHandler(
-  async (_req: Request, res: Response, _next: NextFunction) => {
-    // Clear the refresh token cookie
-    res.clearCookie('refreshToken');
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const refreshToken = req.cookies?.refreshToken;
+    try {
+      if (refreshToken) {
+        await authService.revokeRefreshToken(refreshToken);
+      }
+    } finally {
+      res.clearCookie('refreshToken', COOKIE_CLEAR_OPTIONS);
+      res.clearCookie('accessToken', COOKIE_CLEAR_OPTIONS);
+    }
 
     // Return success
     res.status(200).json({

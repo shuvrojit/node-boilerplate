@@ -51,6 +51,7 @@ describe('Auth Service', () => {
     mockUserInstance.comparePassword.mockClear();
     mockUserInstance.save.mockClear();
     mockUserInstance.toObject.mockClear();
+    mockUserInstance.refreshToken = 'old-refresh-token';
   });
 
   describe('generateToken', () => {
@@ -308,6 +309,41 @@ describe('Auth Service', () => {
       await expect(authService.refreshTokens(mockRefreshToken)).rejects.toThrow(
         new ApiError(401, 'Refresh token mismatch')
       );
+    });
+  });
+
+  describe('revokeRefreshToken', () => {
+    it('clears a matching stored refresh token', async () => {
+      mockUserInstance.refreshToken = mockRefreshToken;
+      (User.findById as jest.Mock).mockReturnValue({
+        select: jest.fn().mockResolvedValue(mockUserInstance),
+      });
+      jest.spyOn(authService, 'verifyToken').mockReturnValue({
+        sub: userId,
+        type: 'REFRESH',
+      });
+
+      await (authService as any).revokeRefreshToken(mockRefreshToken);
+
+      expect(User.findById).toHaveBeenCalledWith(userId);
+      expect(mockUserInstance.refreshToken).toBeUndefined();
+      expect(mockUserInstance.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not revoke a different stored refresh token', async () => {
+      mockUserInstance.refreshToken = 'different-refresh-token';
+      (User.findById as jest.Mock).mockReturnValue({
+        select: jest.fn().mockResolvedValue(mockUserInstance),
+      });
+      jest.spyOn(authService, 'verifyToken').mockReturnValue({
+        sub: userId,
+        type: 'REFRESH',
+      });
+
+      await (authService as any).revokeRefreshToken(mockRefreshToken);
+
+      expect(mockUserInstance.refreshToken).toBe('different-refresh-token');
+      expect(mockUserInstance.save).not.toHaveBeenCalled();
     });
   });
 });
