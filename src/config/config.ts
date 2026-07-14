@@ -25,6 +25,14 @@ const config = {
     apiKey: env.OPENAI_API_KEY,
   },
 
+  // Redis configuration
+  redis: {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+    password: env.REDIS_PASSWORD,
+    db: env.REDIS_DB,
+  },
+
   // JWT configuration
   jwt: {
     secret: env.JWT_SECRET,

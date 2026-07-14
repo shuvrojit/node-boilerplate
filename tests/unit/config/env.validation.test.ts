@@ -54,6 +54,20 @@ describe('Environment Validation', () => {
       expect(result.DB_NAME).toBe('simple-auth');
     });
 
+    it('should use default Redis connection settings', () => {
+      delete process.env.REDIS_HOST;
+      delete process.env.REDIS_PORT;
+      delete process.env.REDIS_PASSWORD;
+      delete process.env.REDIS_DB;
+
+      const result = validateEnv();
+
+      expect(result.REDIS_HOST).toBe('localhost');
+      expect(result.REDIS_PORT).toBe(6379);
+      expect(result.REDIS_PASSWORD).toBeUndefined();
+      expect(result.REDIS_DB).toBe(0);
+    });
+
     it('should use default LOG_LEVEL', () => {
       delete process.env.LOG_LEVEL;
       const result = validateEnv();
@@ -114,6 +128,33 @@ describe('Environment Validation', () => {
 
       process.env.PORT = '3000';
       expect(validateEnv().PORT).toBe(3000);
+    });
+
+    it('should coerce valid Redis connection settings', () => {
+      process.env.REDIS_HOST = 'cache.internal';
+      process.env.REDIS_PORT = '6380';
+      process.env.REDIS_PASSWORD = 'redis-secret';
+      process.env.REDIS_DB = '2';
+
+      const result = validateEnv();
+
+      expect(result.REDIS_HOST).toBe('cache.internal');
+      expect(result.REDIS_PORT).toBe(6380);
+      expect(result.REDIS_PASSWORD).toBe('redis-secret');
+      expect(result.REDIS_DB).toBe(2);
+    });
+
+    it.each([
+      ['REDIS_HOST', ''],
+      ['REDIS_PORT', '0'],
+      ['REDIS_PORT', '65536'],
+      ['REDIS_PORT', '6379.5'],
+      ['REDIS_DB', '-1'],
+      ['REDIS_DB', '1.5'],
+    ])('should reject an invalid %s value', (name, value) => {
+      process.env[name] = value;
+
+      expect(() => validateEnv()).toThrow();
     });
 
     it('should validate LOG_LEVEL values', () => {

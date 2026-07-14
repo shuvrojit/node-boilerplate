@@ -17,6 +17,16 @@ export const envSchema = z.object({
   }),
   DB_NAME: z.string().default('simple-auth'),
 
+  // Redis
+  REDIS_HOST: z.string().trim().min(1).default('localhost'),
+  REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
+  REDIS_PASSWORD: z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().min(1).optional()
+  ),
+  REDIS_DB: z.coerce.number().int().nonnegative().default(0),
+
   // Logging (optional with defaults)
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   LOG_FORMAT: z
