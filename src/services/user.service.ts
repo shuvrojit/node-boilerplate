@@ -81,16 +81,18 @@ export class UserService {
     updateBody: UpdateUserInput
   ): Promise<IUser> {
     const user = await this.getUserById(id);
+    const updates = { ...updateBody };
 
     // If email is being updated, check for uniqueness
-    if (updateBody.email && updateBody.email !== user.email) {
-      const emailExists = await User.findOne({ email: updateBody.email });
+    if (updates.email && updates.email !== user.email) {
+      const emailExists = await User.findOne({ email: updates.email });
       if (emailExists) {
         throw new ApiError(409, 'Email already taken');
       }
+      updates.isEmailVerified = false;
     }
 
-    Object.assign(user, updateBody);
+    Object.assign(user, updates);
     await user.save();
 
     return user;

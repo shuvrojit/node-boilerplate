@@ -3,6 +3,7 @@ import { userController } from '../../../src/controllers';
 import { userService } from '../../../src/services';
 import mongoose from 'mongoose';
 import ApiError from '../../../src/utils/ApiError';
+import { IUser } from '../../../src/models';
 
 // Mock the userService
 jest.mock('../../../src/services', () => ({
@@ -177,6 +178,37 @@ describe('UserController', () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
         data: mockUser,
+      });
+    });
+
+    it('removes server-owned fields from a regular user update', async () => {
+      const userId = new mongoose.Types.ObjectId().toString();
+      mockRequest.params = { userId };
+      mockRequest.user = {
+        _id: userId,
+        role: 'user',
+      } as IUser;
+      mockRequest.body = {
+        name: 'Updated User',
+        role: 'admin',
+        isEmailVerified: true,
+      };
+      (userService.updateUserById as jest.Mock).mockResolvedValueOnce({
+        _id: userId,
+        name: 'Updated User',
+        email: 'test@example.com',
+        role: 'user',
+        isEmailVerified: false,
+      });
+
+      await userController.updateUser(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(userService.updateUserById).toHaveBeenCalledWith(userId, {
+        name: 'Updated User',
       });
     });
   });

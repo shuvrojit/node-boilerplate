@@ -58,8 +58,9 @@ const updateUser = asyncHandler(
     checkUserAccess(req, req.params.userId);
 
     // Regular users cannot change their role
-    if (req.user?.role !== 'admin' && req.body.role) {
+    if (req.user?.role !== 'admin') {
       delete req.body.role;
+      delete req.body.isEmailVerified;
     }
 
     const user = await userService.updateUserById(req.params.userId, req.body);

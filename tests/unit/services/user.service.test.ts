@@ -175,6 +175,20 @@ describe('UserService', () => {
       getUserByIdSpy.mockRestore();
     });
 
+    it('resets verification when the email address changes', async () => {
+      mockUser.isEmailVerified = true;
+      const getUserByIdSpy = jest.spyOn(userService, 'getUserById');
+      getUserByIdSpy.mockResolvedValueOnce(mockUser as IUser);
+      (User.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+      await userService.updateUserById(mockUser._id as string, {
+        email: 'newemail@example.com',
+      });
+
+      expect(mockUser.isEmailVerified).toBe(false);
+      getUserByIdSpy.mockRestore();
+    });
+
     it('should throw error if new email already exists', async () => {
       const updateWithEmail: UpdateUserInput = {
         email: 'existing@example.com',
