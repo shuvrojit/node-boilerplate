@@ -1,18 +1,23 @@
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 import app from './app';
-import logger from './config/logger';
+import config from './config/config';
 import { connectDB } from './config/db';
+import logger from './config/logger';
 
-connectDB();
+export const startServer = async () => {
+  await connectDB();
 
-const PORT: number = Number(process.env.PORT) || 8000;
+  return app.listen(config.port, () => {
+    logger.info(`Server running on port ${config.port} ...`);
+  });
+};
 
-if (isNaN(PORT)) {
-  throw new Error('Invalid PORT environment variable');
+if (require.main === module) {
+  void startServer().catch((error: unknown) => {
+    logger.error('Failed to start server', error);
+    process.exitCode = 1;
+  });
 }
-
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT} ...`);
-});
