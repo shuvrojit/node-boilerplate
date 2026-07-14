@@ -250,7 +250,7 @@ A: Stop the containers and remove the MongoDB volume, or use a test database for
 
 ## License
 
-MIT
+This project is licensed for non-commercial use. See the [LICENSE](LICENSE) file for the full terms.
 
 ## Author
 

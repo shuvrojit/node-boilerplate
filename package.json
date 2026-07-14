@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "author": "Shuvrojit Biswas <jsuvro17@gmail.com>",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "start": "cross-env NODE_ENV=production pm2 start ecosystem.config.json --env production",
     "start:prod": "cross-env NODE_ENV=production pm2 start ecosystem.config.json --no-daemon",
