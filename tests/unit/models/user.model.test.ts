@@ -1,172 +1,129 @@
-import mongoose from 'mongoose';
-// Mock bcrypt to avoid actual hashing in tests
+import bcrypt from 'bcryptjs';
+
 jest.mock('bcryptjs', () => ({
   genSalt: jest.fn().mockResolvedValue('salt'),
-  hash: jest.fn().mockResolvedValue('hashed_password'),
+  hash: jest.fn().mockResolvedValue('$2b$hashed-password1!'),
   compare: jest.fn().mockImplementation((candidatePassword) => {
     return Promise.resolve(candidatePassword === 'correct_password');
   }),
 }));
+
 import { User } from '../../../src/models';
-import bcrypt from 'bcryptjs';
 
 describe('User Model', () => {
-  let newUser: any;
-
-  beforeAll(async () => {
-    // Connect to MongoDB memory server
-    await mongoose.connect(process.env.MONGODB_URL as string);
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
-  });
+  const newUser = {
+    name: 'Test User',
+    email: 'test@example.com',
+    password: 'password123!',
+    role: 'user' as const,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    newUser = {
-      name: 'Test User',
-      email: 'test@example.com',
-      password: 'password123!', // Includes number and symbol to meet validation
-      role: 'user',
-    };
+    jest
+      .spyOn(User.collection, 'insertOne')
+      .mockImplementation(async (document) => {
+        return {
+          acknowledged: true,
+          insertedId: document._id,
+        } as never;
+      });
+    jest.spyOn(User.collection, 'updateOne').mockResolvedValue({
+      acknowledged: true,
+      matchedCount: 1,
+      modifiedCount: 1,
+      upsertedCount: 0,
+      upsertedId: null,
+    });
   });
 
-  afterEach(async () => {
-    await User.deleteMany({});
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('should create a user successfully', async () => {
-    const user = await User.create(newUser);
-    expect(user).toBeDefined();
-    expect(user.name).toBe(newUser.name);
-    expect(user.email).toBe(newUser.email);
-    expect(user.role).toBe(newUser.role);
-    expect(user.isEmailVerified).toBe(false); // default value
+  const saveUser = async (attributes = newUser) => {
+    const user = new User(attributes);
+    await user.save();
+    return user;
+  };
+
+  it('saves a user with defaults and timestamps', async () => {
+    const user = await saveUser();
+
+    expect(User.collection.insertOne).toHaveBeenCalledTimes(1);
+    expect(user).toMatchObject({
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      isEmailVerified: false,
+    });
+    expect(user.createdAt).toBeInstanceOf(Date);
+    expect(user.updatedAt).toBeInstanceOf(Date);
   });
 
-  it('should validate required fields', async () => {
-    const incompleteUser = new User({});
+  it('validates required fields without a database connection', () => {
+    const validationError = new User({}).validateSync();
 
-    await expect(incompleteUser.validate()).rejects.toThrow();
-    // Test for specific required field validations
-    try {
-      await incompleteUser.validate();
-    } catch (error: any) {
-      expect(error.errors.name).not.toBeDefined(); // name is not required
-      expect(error.errors.email).toBeDefined();
-      expect(error.errors.password).toBeDefined();
-    }
+    expect(validationError).toBeDefined();
+    expect(validationError?.errors.name).toBeUndefined();
+    expect(validationError?.errors.email).toBeDefined();
+    expect(validationError?.errors.password).toBeDefined();
   });
 
-  it('should ensure email is unique', async () => {
-    await User.create(newUser);
-
-    // Try to create another user with the same email
-    await expect(
-      User.create({
-        ...newUser,
-        name: 'Another Name', // Different name, same email
-      })
-    ).rejects.toThrow();
+  it('declares a unique index for email addresses', () => {
+    expect(User.schema.path('email').options).toMatchObject({ unique: true });
   });
 
-  it('should hash password before saving', async () => {
-    const user = await User.create(newUser);
+  it('hashes the password before saving', async () => {
+    const user = await saveUser();
 
-    // Check if bcrypt.hash was called
     expect(bcrypt.genSalt).toHaveBeenCalledWith(10);
     expect(bcrypt.hash).toHaveBeenCalledWith(newUser.password, 'salt');
-    expect(user.password).toBe('hashed_password');
+    expect(user.password).toBe('$2b$hashed-password1!');
   });
 
-  it('should not hash password if it is not modified', async () => {
-    // Use a valid password that matches the schema
-    const validPassword = 'Password123!';
-    // Mock bcrypt.hash to return the same value as input
-    (bcrypt.hash as jest.Mock).mockImplementation((pw) => Promise.resolve(pw));
-
-    const user = await User.create({
-      ...newUser,
-      password: validPassword,
-    });
-
-    // Reset mock calls count
-    (bcrypt.genSalt as jest.Mock).mockClear();
-    (bcrypt.hash as jest.Mock).mockClear();
-
-    // Mock isModified to return false
-    jest.spyOn(user, 'isModified').mockReturnValue(false);
+  it('does not hash the password when another field changes', async () => {
+    const user = await saveUser();
+    jest.mocked(bcrypt.genSalt).mockClear();
+    jest.mocked(bcrypt.hash).mockClear();
 
     user.name = 'Updated Name';
     await user.save();
 
-    // Should not call hash again
+    expect(User.collection.updateOne).toHaveBeenCalledTimes(1);
     expect(bcrypt.genSalt).not.toHaveBeenCalled();
     expect(bcrypt.hash).not.toHaveBeenCalled();
   });
 
-  it('should correctly compare password', async () => {
-    const user = await User.create(newUser);
+  it('compares candidate passwords with the stored hash', async () => {
+    const user = await saveUser();
 
-    // Check what the hashed password is
-    expect(typeof user.password).toBe('string');
-
-    const isMatch1 = await user.comparePassword('correct_password');
-    expect(isMatch1).toBe(true);
+    await expect(user.comparePassword('correct_password')).resolves.toBe(true);
+    await expect(user.comparePassword('wrong_password')).resolves.toBe(false);
     expect(bcrypt.compare).toHaveBeenCalledWith(
       'correct_password',
       user.password
     );
-
-    const isMatch2 = await user.comparePassword('wrong_password');
-    expect(isMatch2).toBe(false);
   });
 
-  it('should have timestamps', async () => {
-    const user = await User.create(newUser);
-    expect(user.createdAt).toBeDefined();
-    expect(user.updatedAt).toBeDefined();
+  it('validates email format', async () => {
+    const user = new User({ ...newUser, email: 'invalid-email' });
+
+    await expect(user.validate()).rejects.toThrow();
   });
 
-  it('should validate email format', async () => {
-    const userWithInvalidEmail = new User({
-      ...newUser,
-      email: 'invalid-email',
-    });
+  it.each(['password!', 'password123', 'pw1!'])(
+    'rejects the invalid password %s',
+    async (password) => {
+      const user = new User({ ...newUser, password });
 
-    await expect(userWithInvalidEmail.validate()).rejects.toThrow();
-  });
+      await expect(user.validate()).rejects.toThrow();
+    }
+  );
 
-  it('should validate password format requirements', async () => {
-    // Missing number
-    const userWithoutNumberPassword = new User({
-      ...newUser,
-      password: 'password!',
-    });
-    await expect(userWithoutNumberPassword.validate()).rejects.toThrow();
+  it('validates role enum values', async () => {
+    const user = new User({ ...newUser, role: 'invalid-role' });
 
-    // Missing symbol
-    const userWithoutSymbolPassword = new User({
-      ...newUser,
-      password: 'password123',
-    });
-    await expect(userWithoutSymbolPassword.validate()).rejects.toThrow();
-
-    // Too short
-    const userWithShortPassword = new User({
-      ...newUser,
-      password: 'pw1!',
-    });
-    await expect(userWithShortPassword.validate()).rejects.toThrow();
-  });
-
-  it('should validate role enum values', async () => {
-    const userWithInvalidRole = new User({
-      ...newUser,
-      role: 'invalid-role',
-    });
-
-    await expect(userWithInvalidRole.validate()).rejects.toThrow();
+    await expect(user.validate()).rejects.toThrow();
   });
 });

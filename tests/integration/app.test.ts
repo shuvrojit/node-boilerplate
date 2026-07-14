@@ -1,20 +1,22 @@
-jest.mock('../../src/config/config', () => ({
-  __esModule: true,
-  default: {
-    cookie: {
-      secure: false,
-      httpOnly: true,
-    },
-    jwt: {
-      refreshExpirationDays: 7,
-    },
-  },
-}));
+import request from 'supertest';
 
-import { describe, it, expect } from '@jest/globals';
+import app from '../../src/app';
 
-describe('App Integration', () => {
-  it('should run integration tests', () => {
-    expect(true).toBe(true);
+describe('App integration', () => {
+  it('serves the root endpoint', async () => {
+    const response = await request(app).get('/');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toBe('root');
+  });
+
+  it('returns the standard error response for an unknown route', async () => {
+    const response = await request(app).get('/does-not-exist');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      status: 'error',
+      message: 'Not found: /does-not-exist',
+    });
   });
 });
