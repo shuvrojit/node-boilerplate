@@ -7,7 +7,7 @@ import logger from '../config/logger';
  * Convert regular Error to ApiError
  */
 export const errorConverter = (
-  err: any,
+  err: unknown,
   _req: Request,
   _res: Response,
   next: NextFunction
@@ -15,10 +15,18 @@ export const errorConverter = (
   let error = err;
 
   if (!(error instanceof ApiError)) {
-    const statusCode =
-      error instanceof Error ? (error as any).statusCode || 400 : 500;
-    const message = error.message || 'Something went wrong';
-    error = new ApiError(statusCode, message, true); // Set isOperational to true
+    let message = 'Something went wrong';
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
+      message = error.message;
+    }
+    const stack = error instanceof Error ? error.stack : undefined;
+
+    error = new ApiError(500, message, false, stack);
   }
 
   next(error);

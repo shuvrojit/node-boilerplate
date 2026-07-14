@@ -83,43 +83,30 @@ class AuthService {
     user: UserResponse;
     tokens: AuthTokens;
   }> {
-    try {
-      // Get user by email, selecting the password and refreshToken fields explicitly
-      const user = await User.findOne({ email: credentials.email }).select(
-        '+password +refreshToken'
-      );
-      if (!user) {
-        throw new ApiError(401, 'Incorrect email or password');
-      }
-
-      // Verify password
-      const isPasswordMatch = await user.comparePassword(credentials.password);
-      if (!isPasswordMatch) {
-        throw new ApiError(401, 'Incorrect email or password');
-      }
-
-      // Ensure user has a valid ID
-      if (!user._id) {
-        throw new ApiError(500, 'Invalid user data');
-      }
-
-      // Generate tokens using a safe string conversion
-      const tokens = this.generateAuthTokens(String(user._id));
-
-      // Save the refresh token to the user document
-      // Consider hashing the refresh token before saving for added security
-      user.refreshToken = tokens.refreshToken; // Store the plain token for now, hashing can be added
-      await user.save();
-
-      return {
-        user: toUserResponse(user),
-        tokens,
-      };
-    } catch (error) {
-      // Ensure consistent error message for failed login attempts
-      // regardless of whether the user was not found or the password didn't match
+    const user = await User.findOne({ email: credentials.email }).select(
+      '+password +refreshToken'
+    );
+    if (!user) {
       throw new ApiError(401, 'Incorrect email or password');
     }
+
+    const isPasswordMatch = await user.comparePassword(credentials.password);
+    if (!isPasswordMatch) {
+      throw new ApiError(401, 'Incorrect email or password');
+    }
+
+    if (!user._id) {
+      throw new ApiError(500, 'Invalid user data');
+    }
+
+    const tokens = this.generateAuthTokens(String(user._id));
+    user.refreshToken = tokens.refreshToken;
+    await user.save();
+
+    return {
+      user: toUserResponse(user),
+      tokens,
+    };
   }
 
   /**

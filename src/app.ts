@@ -38,16 +38,6 @@ app.get('/', (_, res: Response) => {
 // API Routes
 app.use('/api/v1', v1Routes);
 
-// Add the routes for error testing
-app.get('/error', () => {
-  throw new Error('Test error');
-});
-
-app.get('/api-error', () => {
-  const ApiError = require('./utils/ApiError').default;
-  throw new ApiError(400, 'Bad request error');
-});
-
 // Add 404 handler for routes that don't exist
 app.use(notFound);
 

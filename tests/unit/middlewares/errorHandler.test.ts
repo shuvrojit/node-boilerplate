@@ -36,8 +36,9 @@ describe('Error Handler Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
       expect(mockNext.mock.calls[0][0]).toBeInstanceOf(ApiError);
       const convertedError = mockNext.mock.calls[0][0] as unknown as ApiError;
-      expect(convertedError.statusCode).toBe(400);
+      expect(convertedError.statusCode).toBe(500);
       expect(convertedError.message).toBe(error.message);
+      expect(convertedError.isOperational).toBe(false);
     });
 
     test('should convert non-Error object to ApiError', () => {
@@ -49,6 +50,7 @@ describe('Error Handler Middleware', () => {
       const convertedError = mockNext.mock.calls[0][0] as unknown as ApiError;
       expect(convertedError.statusCode).toBe(500);
       expect(convertedError.message).toBe(error.message);
+      expect(convertedError.isOperational).toBe(false);
     });
 
     test('should not convert if already ApiError', () => {

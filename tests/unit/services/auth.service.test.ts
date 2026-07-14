@@ -218,6 +218,20 @@ describe('Auth Service', () => {
         'wrong-password'
       );
     });
+
+    it('propagates database failures instead of reporting bad credentials', async () => {
+      const databaseError = new Error('Database unavailable');
+      (User.findOne as jest.Mock).mockReturnValue({
+        select: jest.fn().mockRejectedValue(databaseError),
+      });
+
+      await expect(
+        authService.login({
+          email: userEmail,
+          password: userPassword,
+        })
+      ).rejects.toBe(databaseError);
+    });
   });
 
   // Updated describe block name and tests
