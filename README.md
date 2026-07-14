@@ -1,6 +1,6 @@
 # Node.js TypeScript Boilerplate
 
-A production-ready Node.js boilerplate with TypeScript, Express, MongoDB, and comprehensive testing setup using Test-Driven Development (TDD) approach.
+A production-ready Node.js boilerplate with TypeScript, Express, MongoDB, Redis, and comprehensive testing setup using a Test-Driven Development (TDD) approach.
 
 ---
 
@@ -33,6 +33,7 @@ yarn test
 - **Language:** TypeScript
 - **Web Framework:** Express.js
 - **Database:** MongoDB with Mongoose
+- **Cache:** Redis with ioredis
 - **Authentication:** JWT (Access & Refresh Tokens) + bcrypt + Cookies (HttpOnly)
 - **Validation:** Zod for schema validation (Requests & Environment Variables)
 - **Logging:** Winston + Morgan
@@ -78,6 +79,14 @@ yarn test
 - Containerized database with Docker
 - Environment-based configuration
 
+### Redis
+
+- Lazy ioredis client with explicit connection and shutdown helpers
+- Application startup waits for Redis readiness before accepting traffic
+- Fail-fast command behavior when Redis is unavailable
+- Separate development, test, and production Docker configurations
+- Password-protected, persistent Redis service in production
+
 ### Development Tools
 
 - TypeScript for type safety
@@ -96,7 +105,7 @@ yarn test
 - Multi-environment Docker compositions
 - Production-ready Dockerfile
 - Development and testing environments
-- MongoDB container integration
+- MongoDB and Redis container integration
 
 ---
 
@@ -194,6 +203,8 @@ DELETE /api/v1/users/:userId - Delete a user (Admin only)
 - Validated and sanitized using Zod schemas
 - Type-safe and runtime-checked
 - See `src/config/env.validation.ts` for all variables and defaults
+- Redis uses `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, and `REDIS_DB`
+- `REDIS_PASSWORD` may be empty locally but is required by the production Docker profile
 
 ### Request Validation
 
@@ -241,7 +252,11 @@ A: Add it to `.env.example` and update `src/config/env.validation.ts` with a Zod
 A: Create a controller, add a route in `src/routes/v1/`, and add validation in `src/validations/`.
 
 **Q: How do I use Docker for development?**  
-A: `yarn docker:dev` spins up the app and MongoDB in containers.
+A: `yarn docker:dev` spins up the app, MongoDB, and Redis in containers. MongoDB and Redis are exposed only on the local loopback interface.
+
+**Q: How do I run the app locally without Docker?**
+
+A: Start MongoDB and Redis locally, copy `.env.example` to `.env`, then run `yarn dev`. Redis defaults to `localhost:6379`.
 
 **Q: How do I reset the database?**  
 A: Stop the containers and remove the MongoDB volume, or use a test database for development.
